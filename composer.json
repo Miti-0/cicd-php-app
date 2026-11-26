@@ -1,0 +1,12 @@
+{
+  "name": "miti-0/cicd-php-app",
+  "description": "Sample PHP application for CI/CD pipeline",
+  "type": "project",
+  "require": {
+    "php": ">=8.2"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  }
+}

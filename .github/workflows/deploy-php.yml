@@ -1,0 +1,56 @@
+name: CI/CD PHP App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Lint PHP files
+        run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} +
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
+
+      - name: Configure SSH key
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          {
+            cat ~/.ssh/known_hosts 2>/dev/null
+            ssh-keyscan -T 5 "${{ secrets.SSH_HOST }}"
+          } | sort -u > ~/.ssh/known_hosts.tmp
+          mv ~/.ssh/known_hosts.tmp ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy files to /var/www/cicd-php/
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          rsync -avz --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            -e "ssh -i ~/.ssh/id_ed25519" \
+            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/cicd-php/"
+
+      - name: Reload PHP-FPM and Nginx
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "sudo systemctl reload php8.2-fpm && sudo nginx -t && sudo systemctl reload nginx"
