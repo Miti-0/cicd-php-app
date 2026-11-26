@@ -1,6 +1,2 @@
 <?php
-declare(strict_types=1);
-
-require __DIR__ . '/vendor/autoload.php';
-
-echo "Deployed via GitHub Actions - PHP App";
+echo "Missing semicolon"
