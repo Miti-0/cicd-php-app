@@ -1,39 +1,39 @@
 name: CI/CD PHP App
 
 on:
-push:
-branches:
-  - main
-pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-build-and-deploy:
-runs-on: self-hosted
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Setup PHP 8.2
-    run: |
-      php -v
-      composer --version
+      - name: Setup PHP 8.2
+        run: |
+          php -v
+          composer --version
 
-  - name: Lint PHP files
-    run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} +
+      - name: Lint PHP files
+        run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} +
 
-  - name: Install Composer dependencies
-    run: composer install --no-dev --no-interaction --prefer-dist
+      - name: Install Composer dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
 
-  - name: Deploy files to /var/www/cicd-php/
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    run: |
-      rsync -av --delete \
-        --exclude '.git/' \
-        --exclude '.github/' \
-        --exclude 'actions-runner/' \
-        ./ /var/www/cicd-php/
+      - name: Deploy files to /var/www/cicd-php/
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          rsync -av --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'actions-runner/' \
+            ./ /var/www/cicd-php/
 
-  - name: Reload PHP-FPM and Nginx
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    run: |
-      sudo systemctl reload php8.2-fpm && sudo nginx -t && sudo systemctl reload nginx
+      - name: Reload PHP-FPM and Nginx
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          sudo systemctl reload php8.2-fpm && sudo nginx -t && sudo systemctl reload nginx
