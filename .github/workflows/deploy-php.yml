@@ -36,4 +36,4 @@ jobs:
       - name: Reload PHP-FPM and Nginx
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          sudo systemctl reload php8.2-fpm && sudo nginx -t && sudo systemctl reload nginx
+          sudo systemctl reload php8.3-fpm && sudo nginx -t && sudo systemctl reload nginx
